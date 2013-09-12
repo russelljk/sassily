@@ -10,5 +10,6 @@ setup(name='sassily',
       url='http://russellkyle.com/django-sassily/',
       download_url='https://github.com/russelljk/django-sassily/archive/master.zip',
       packages=['sassily'],
+      include_package_data=True,
       keywords=['Django', 'SASS', 'CSS']
 )
