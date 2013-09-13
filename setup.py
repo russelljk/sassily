@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(name='sassily',
       version='0.1',
@@ -12,7 +9,7 @@ setup(name='sassily',
       author_email='russell.j.kyle@gmail.com',
       url='http://russellkyle.com/sassily/',
       download_url='https://github.com/russelljk/sassily/archive/master.zip',
-      packages=['sassily'],
+      packages=find_packages(),
       include_package_data=True,
       keywords=['Django', 'SASS', 'CSS']
 )

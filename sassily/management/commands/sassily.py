@@ -36,12 +36,12 @@ class Command(BaseCommand):
         use_compass = getattr(settings, 'SASSILY_USE_COMPASS', False)
         
         if not staging_dir:
-            raise CommandError('Make sure to set the both the SASSILY_SRC_DIR in your project settings to point to your scss files.')
+            raise CommandError('Make sure to set SASSILY_SRC_DIR in your project settings to point to your scss files.')
             
         dest_dir = getattr(settings, 'SASSILY_DEST_DIR', None)
         
         if not dest_dir:
-            raise CommandError('Make sure to set the both the SASSILY_DEST_DIR in your settings to point to the destination for scss->css conversions.')
+            raise CommandError('Make sure to set SASSILY_DEST_DIR in your settings to point to the destination for scss->css conversions.')
             
         if options['compress']:
             style = 'compressed'
@@ -50,16 +50,16 @@ class Command(BaseCommand):
             
         watch = options['watch_dir']
         quiet = options['quiet']
-                
-        path = "{0}/*.scss".format(staging_dir)
+        
+        path = "{0}" + os.path.sep + "*.scss".format(staging_dir)
         
         if use_compass:
             cmd_name = "sass --compass"
         else:
             cmd_name = "sass"
-            
+        
         if not watch:
-            cmd_fmt = cmd_name + " --style {0} {1} {2}/{3}.css"
+            cmd_fmt = cmd_name + " --style {0} {1} {2}" + os.path.sep + "{3}.css"
             
             for f in glob.glob(path):
                 base = os.path.basename(f)
@@ -67,10 +67,8 @@ class Command(BaseCommand):
                 if not quiet:
                     self.stdout.write('Converting {0}...'.format(base))
                 filename = filename[0]
-    
-                # Make dev css file.
-                cmd = cmd_fmt.format(style, f, dest_dir, filename)
                 
+                cmd = cmd_fmt.format(style, f, dest_dir, filename)                
                 os.system(cmd)
         else:
             cmd_fmt = cmd_name + " --style {0} --watch {1}:{2}"
