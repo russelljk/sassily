@@ -11,5 +11,6 @@ setup(name='sassily',
       download_url='https://github.com/russelljk/sassily/archive/master.zip',
       packages=find_packages(),
       include_package_data=True,
+      zip_safe = False,
       keywords=['Django', 'SASS', 'CSS']
 )
