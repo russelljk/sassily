@@ -29,12 +29,32 @@ Install directly from **GitHub**:
 
 ###Configuration
     
-Add the following to your Django `settings.py`. 
+Add the `SASSILY_CONFIG` to your Django `settings.py`. It should be a dictionary of scss locations.
+    
+    import os
+    import sys
 
-    SASSILY_SRC_DIR = '/path/to/your/scss/files'
-    SASSILY_DEST_DIR = '/path/to/static/css'
+    BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__))
+    
+    SASSILY_CONFIG = {
+        'default': {
+            'source': os.path.join(BASE_DIR, 'scss/assets'),
+            'destination': os.path.join(BASE_DIR, 'static/css'),
+            'compass': True,
+            'requirements': None,
+        },
+        'myapp': {
+            'source': os.path.join(BASE_DIR, 'myapp/scss/assets'),
+            'destination': os.path.join(BASE_DIR, 'myapp/static/css'),
+            'compass': True,
+            'requirements': None,
+        }
+    }
 
-These are the source and destination directories. Source should contain any scss files. The destination will contain the finished css files. Don't place a trailing slash on the directories.
+* source - The directory containing your scss files.
+* destination - The directory that your css files will be saved in.
+* compass (True|False) - Whether or not to include compass support.
+* requirements - Optional array of libraries to include.
 
 Install `sassily` by adding it to `INSTALLED_APPS`.
 
@@ -46,8 +66,6 @@ Install `sassily` by adding it to `INSTALLED_APPS`.
 ####Using Compass
 
 Make sure you have Compass installed and add the following to your settings.
-
-    SASSILY_USE_COMPASS = True
 
 ###Structure
 
@@ -80,3 +98,8 @@ In addition the following options are availiable.
     
     --compress, -c
         Compress all css files. 
+    
+    --location, -l
+        Just process the "location" listed. For example in the above configuration both "default" and "myapp" are considered distinct locations.
+        You can do more than 1 location by including the option more than once:
+        ./manage.py sassily -l myapp1 -l myapp2

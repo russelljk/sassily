@@ -1,8 +1,20 @@
-import os
-import glob
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from optparse import make_option
+import time
+from ...manager import Manager
+
+def mulitple_args_cb(option, opt_str, value, parser):
+    args=[]
+    for arg in parser.rargs:
+        if arg[0] != "-":
+            args.append(arg)
+        else:
+            del parser.rargs[:len(args)]
+            break
+    if getattr(parser.values, option.dest):
+        args.extend(getattr(parser.values, option.dest))
+    setattr(parser.values, option.dest, args)
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -19,7 +31,7 @@ class Command(BaseCommand):
             action="store_true",
             default=False,
             help="Run quietly."
-            ),
+        ),
         make_option(
             "-c", 
             "--compress", 
@@ -28,55 +40,68 @@ class Command(BaseCommand):
             default=False,
             help="Compress css files."
         ),
+        make_option(
+            "-l", 
+            "--location", 
+            dest="locations",
+            action='callback',
+            callback=mulitple_args_cb,
+            help="Which location(s) of scss files to process."
+        ),
     )
     
     def handle(self, *args, **options):
+        sassily_config = getattr(settings, 'SASSILY_CONFIG', None)
         
-        staging_dir = getattr(settings, 'SASSILY_SRC_DIR', None)
-        use_compass = getattr(settings, 'SASSILY_USE_COMPASS', False)
-        reqs = getattr(settings, 'SASSILY_REQS', None)
+        if sassily_config is None:
+            raise CommandError('Make sure to set SASSILY_CONFIG in your project settings to point to your scss files.')
         
-        if not staging_dir:
-            raise CommandError('Make sure to set SASSILY_SRC_DIR in your project settings to point to your scss files.')
-            
-        dest_dir = getattr(settings, 'SASSILY_DEST_DIR', None)
-        
-        if not dest_dir:
-            raise CommandError('Make sure to set SASSILY_DEST_DIR in your settings to point to the destination for scss->css conversions.')
-            
-        if options['compress']:
-            style = 'compressed'
-        else:
-            style = 'nested'
-            
+        compress = options['compress']
         watch = options['watch_dir']
         quiet = options['quiet']
+        locations = options['locations']
         
-        path = ("{0}" + os.path.sep + "*.scss").format(staging_dir)
+        managers = []
         
-        if use_compass:
-            cmd_name = "sass --compass"
-        else:
-            cmd_name = "sass"
+        for location in sassily_config:
+            # Skip this location depending on what the user wants.
+            if locations and (location not in locations):
+                continue
+            
+            if not quiet:
+                self.stdout.write('\nProcessing location {0}\n'.format(location))
+            
+            config = sassily_config[location]
+            sass_args = config.copy()
+            sass_args['command'] = self
+            sass_args['compress'] = compress
+            
+            manager = Manager(**sass_args)
+            managers.append(manager)
+            
+            if watch:
+                manager.watch()
+            else:
+                manager.run()
         
-        if reqs:
-            for req in reqs:
-                cmd_name += ' --require ' + req
-                
-        if not watch:
-            cmd_fmt = cmd_name + " --style {0} {1} {2}" + os.path.sep + "{3}.css"
-                        
-            for f in glob.glob(path):
-                base = os.path.basename(f)
-                filename = os.path.splitext(base)
-                if not quiet:
-                    self.stdout.write('Converting {0}...'.format(base))
-                filename = filename[0]
-                cmd = cmd_fmt.format(style, f, dest_dir, filename)                
-                
-                os.system(cmd)
-        else:
-            cmd_fmt = cmd_name + " --style {0} --watch {1}:{2}"
-            cmd = cmd_fmt.format(style, staging_dir, dest_dir)
-            os.system(cmd)
+        '''
+        We need to keep running as long as the subprocess's are running. So every 1s 
+        we poll the process and print out and input it has waiting.
+        
+        The processes are running in the background, they are not put to sleep when we
+        are.
+        '''
+        if watch:
+            processes_running = True
+            while processes_running:
+                time.sleep(1)
+                processes_running = False
+                for manager in managers:
+                    if manager.is_running():
+                        lines = manager.readlines()
+                        if lines:
+                            self.stdout.write('\n'.join(lines))
+                        processes_running = True
+    
+
 
