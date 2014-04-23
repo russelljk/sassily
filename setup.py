@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(name='sassily',
-      version='0.1',
+      version='0.2',
       description='Management commands for using sass and Django together.',
       author='Russell Kyle',
       author_email='russell.j.kyle@gmail.com',
